@@ -19,24 +19,37 @@ class _HomePageState extends State<HomePage> {
 
   PageController pageController = PageController(initialPage: 0);
   int pageChange = 0;
-  String trendingRoute = 'data/trending_movie.json';
-  String discoverRoute = 'data/discover_movie.json';
+
   //Favorite
   List<int> favorIDs = [];
   List<Movie> addFavors = [];
 
-  //Get data movie in JSON local file
-  Future<List<Movie>> getMovieData(String url) async {
-    var movieJson = await rootBundle.loadString(url);
-    var jsonData = json.decode(movieJson);
-    var jsonResult = jsonData['results'];
-    List<Movie> movies = [];
+  //Get data movie in API
+  // API trending: https://api.themoviedb.org/3/trending/movie/day?api_key=061e411e417766bfc7b370d08d2fbd49&language=english
+  // API discover: https://api.themoviedb.org/3/discover/movie?api_key=061e411e417766bfc7b370d08d2fbd49&language=english
 
-    for(var t in jsonResult) {
-      Movie movie = Movie(t["id"], t["title"], t["vote_average"]);
-      movies.add(movie);
+  final String apiKey = '061e411e417766bfc7b370d08d2fbd49';
+  String apiUrl = 'https://api.themoviedb.org/3';
+  String trendingRoute = '/trending/movie/day';
+  String discoverRoute = '/discover/movie';
+
+  Future<List<Movie>> getMovieData(String url) async {
+    final response =
+    await http.get(Uri.parse('$apiUrl$url?api_key=$apiKey&language=english'));
+
+    if (response.statusCode == 200) {
+      var jsonData = jsonDecode(response.body);
+      var jsonResult = jsonData['results'];
+      List<Movie> movies = [];
+
+      for(var t in jsonResult) {
+        Movie movie = Movie(t["id"], t["title"], t["vote_average"]);
+        movies.add(movie);
+      }
+      return movies;
+    } else {
+      throw Exception('Failed to load API');
     }
-    return movies;
   }
 
   @override
@@ -46,35 +59,6 @@ class _HomePageState extends State<HomePage> {
     this.getMovieData(discoverRoute);
   }
 
-  // Fail to get API although the link is correct
-  // So I temporary use file json instead
-  // API trending: https://api.themoviedb.org/3/trending/movie/day?api_key=061e411e417766bfc7b370d08d2fbd49&language=english
-  // API discover: https://api.themoviedb.org/3/discover/movie?api_key=061e411e417766bfc7b370d08d2fbd49&language=english
-  /*
-  final String apiKey = "061e411e417766bfc7b370d08d2fbd49";
-
-  getTrendingData() async {
-    final response =
-    await http.get(Uri.https('api.themoviedb.org', '3/trending/movie/day?api_key=061e411e417766bfc7b370d08d2fbd49&language=english'));
-    if (response.statusCode == 200) {
-      var jsonData = jsonDecode(response.body);
-      print(jsonData.toString());
-      //   var jsonResult = jsonData['results'];
-      List<TrendingMovie> trendingMovies = [];
-
-      for(var t in jsonData) {
-        TrendingMovie trendingMovie = TrendingMovie(t["title"], t["vote_average"]);
-        trendingMovies.add(trendingMovie);
-      }
-      print(trendingMovies.length);
-      return trendingMovies;
-    } else {
-      // If the server did not return a 200 OK response,
-      // then throw an exception.
-      throw Exception('Failed to load API');
-    }
-  }
-  */
   
   @override
   Widget build(BuildContext context) {
